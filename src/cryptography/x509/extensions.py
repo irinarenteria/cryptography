@@ -1446,7 +1446,7 @@ class IssuingDistributionPoint(object):
 
         if len([value for value in booleans if value is True]) > 1:
             raise ValueError("Only one of the following can be set to True: "
-                "only_contains_user_certs, only_contains_ca_certs, ""
+                "only_contains_user_certs, only_contains_ca_certs, "
                 "indirect_crl, only_contains_attribute_certs")
 
         if only_some_reasons and not all(isinstance(x, ReasonFlags)
