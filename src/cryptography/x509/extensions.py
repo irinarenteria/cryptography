@@ -1504,9 +1504,21 @@ class IssuingDistributionPoint(object):
                 self._distribution_point
             ))
 
-        only_contains_user_certs = utils.read_only_property("_only_contains_user_certs")
-        only_contains_ca_certs = utils.read_only_property("_only_contains_ca_certs")
-        only_contains_attribute_certs = utils.read_only_property("_only_contains_attribute_certs")
-        indirect_crl = utils.read_only_property("_indirect_crl")
-        only_some_reasons = utils.read_only_property("_only_some_reasons")
-        distribution_point = utils.read_only_property("_distribution_point")
+        only_contains_user_certs = utils.read_only_property(
+            "_only_contains_user_certs"
+        )
+        only_contains_ca_certs = utils.read_only_property(
+            "_only_contains_ca_certs"
+        )
+        only_contains_attribute_certs = utils.read_only_property(
+            "_only_contains_attribute_certs"
+        )
+        indirect_crl = utils.read_only_property(
+            "_indirect_crl"
+        )
+        only_some_reasons = utils.read_only_property(
+            "_only_some_reasons"
+        )
+        distribution_point = utils.read_only_property(
+            "_distribution_point"
+        )
