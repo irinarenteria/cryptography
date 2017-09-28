@@ -1442,7 +1442,10 @@ class IssuingDistributionPoint(object):
 
         for arg in booleans:
             if not isinstance(arg, bool):
-                raise TypeError("These arguments must be boolean")
+                raise TypeError("The following arguments: "
+                    "only_contains_user_certs, only_contains_ca_certs, "
+                    "indirect_crl and only_contains_attribute_certs "
+                    "must be a boolean.")
 
         if len([value for value in booleans if value is True]) > 1:
             raise ValueError("Only one of the following can be set to True: "
