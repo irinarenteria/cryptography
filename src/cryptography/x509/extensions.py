@@ -1427,3 +1427,68 @@ class UnrecognizedExtension(object):
 
     def __hash__(self):
         return hash((self.oid, self.value))
+
+
+@utils.register_interface(ExtensionType)
+class IssuingDistributionPoint(object):
+    def __init__(self, only_contains_user_certs, only_contains_ca_certs,
+                 indirect_crl, only_contains_attribute_certs,
+                 distribution_point=None, only_some_reasons=None):
+
+        booleans = [only_contains_user_certs,
+                    only_contains_ca_certs,
+                    indirect_crl,
+                    only_contains_attribute_certs]
+
+        for arg in booleans:
+            if not isinstance(arg, bool):
+                raise TypeError("These arguments must be boolean")
+
+        if len([value for value in booleans if value is True]) > 1:
+            raise ValueError("Only one of the following can be set to True: "
+                "only_contains_user_certs, only_contains_ca_certs, ""
+                "indirect_crl, only_contains_attribute_certs")
+
+        if only_some_reasons and not all(isinstance(x, ReasonFlags)
+                                         for x in only_some_reasons)):
+            raise TypeError("reasons must be None or match ReasonFlags")
+
+        self._only_contains_user_certs = only_contains_user_certs
+        self._only_contains_ca_certs = only_contains_ca_certs
+        self._indirect_crl = indirect_crl
+        self._only_contains_attribute_certs = only_contains_attribute_certs
+        self._only_some_reasons = _only_some_reasons
+        self._distribution_point = distribution_point
+
+        def __repr__(self):
+            return (
+                "<IssuingDistributionPoint(only_contains_user_certs={0.only_contains_user_certs}, "
+                "only_contains_ca_certs={0.only_contains_ca_certs}, "
+                "indirect_crl={0.indirect_crl}, "
+                "only_contains_attribute_certs={0.only_contains_attribute_certs}, "
+                "only_some_reasons={0.only_some_reasons}, "
+                "distribution_point={0.distribution_point}>".format(self)
+            )
+
+        def __eq__(self, other):
+            if not isinstance(other, IssuingDistributionPoint):
+                return NotImplemented
+
+            return (
+                self._only_contains_user_certs = only_contains_user_certs
+                self._only_contains_ca_certs = only_contains_ca_certs
+                self._indirect_crl = indirect_crl
+                self._only_contains_attribute_certs = only_contains_attribute_certs
+                self._only_some_reasons = only_some_reasons
+                self._distribution_point = distribution_point
+            )
+
+        def __ne__(self, other):
+            return not self == other
+
+        only_contains_user_certs = utils.read_only_property("_only_contains_user_certs")
+        only_contains_ca_certs = utils.read_only_property("_only_contains_ca_certs")
+        only_contains_attribute_certs = utils.read_only_property("_only_contains_attribute_certs")
+        indirect_crl = utils.read_only_property("_indirect_crl")
+        only_some_reasons = utils.read_only_property("_only_some_reasons")
+        distribution_point = utils.read_only_property("_distribution_point")
