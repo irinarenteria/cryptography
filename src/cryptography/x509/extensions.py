@@ -1494,6 +1494,16 @@ class IssuingDistributionPoint(object):
         def __ne__(self, other):
             return not self == other
 
+        def __hash__(self):
+            return hash((
+                self._only_contains_user_certs,
+                self._only_contains_ca_certs,
+                self._only_contains_attribute_certs,
+                self._indirect_crl,
+                self._only_some_reasons,
+                self._distribution_point
+            ))
+
         only_contains_user_certs = utils.read_only_property("_only_contains_user_certs")
         only_contains_ca_certs = utils.read_only_property("_only_contains_ca_certs")
         only_contains_attribute_certs = utils.read_only_property("_only_contains_attribute_certs")
