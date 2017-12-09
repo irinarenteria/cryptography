@@ -81,6 +81,7 @@ class ExtensionOID(object):
     POLICY_CONSTRAINTS = ObjectIdentifier("2.5.29.36")
     EXTENDED_KEY_USAGE = ObjectIdentifier("2.5.29.37")
     FRESHEST_CRL = ObjectIdentifier("2.5.29.46")
+    ISSUING_DISTRIBUTION_POINT = ObjectIdentifier("2.5.29.28")
     INHIBIT_ANY_POLICY = ObjectIdentifier("2.5.29.54")
     AUTHORITY_INFORMATION_ACCESS = ObjectIdentifier("1.3.6.1.5.5.7.1.1")
     SUBJECT_INFORMATION_ACCESS = ObjectIdentifier("1.3.6.1.5.5.7.1.11")

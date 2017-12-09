@@ -1431,6 +1431,8 @@ class UnrecognizedExtension(object):
 
 @utils.register_interface(ExtensionType)
 class IssuingDistributionPoint(object):
+    oid = ExtensionOID.ISSUING_DISTRIBUTION_POINT
+
     def __init__(self, only_contains_user_certs, only_contains_ca_certs,
                  indirect_crl, only_contains_attribute_certs,
                  distribution_point=None, only_some_reasons=None):
