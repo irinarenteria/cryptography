@@ -1452,15 +1452,15 @@ class IssuingDistributionPoint(object):
                 "only_contains_user_certs, only_contains_ca_certs, "
                 "indirect_crl, only_contains_attribute_certs")
 
-        if len([value for value in booleans if value is True]) == 0 and
-            all(x is not None for x in [distribution_point, only_some_reasons]):
+        if (len([value for value in booleans if value is True]) == 0 and
+            all(x is not None for x in [distribution_point, only_some_reasons])):
             raise ValueError("Cannot create empty extension: "
                 "if only_contains_user_certs, only_contains_ca_certs, "
                 "indirectCRL, and only_contains_attribute_certs are all False"
                 ", then either distribution_point or only_some_reasons "
                 "must have a value.")
 
-        if only_some_reasons and not all(isinstance(x, ReasonFlags)
+        if (only_some_reasons and not all(isinstance(x, ReasonFlags)
                                          for x in only_some_reasons)):
             raise TypeError("reasons must be None or match ReasonFlags")
 
@@ -1486,12 +1486,12 @@ class IssuingDistributionPoint(object):
                 return NotImplemented
 
             return (
-                self._only_contains_user_certs = only_contains_user_certs
-                self._only_contains_ca_certs = only_contains_ca_certs
-                self._indirect_crl = indirect_crl
-                self._only_contains_attribute_certs = only_contains_attribute_certs
-                self._only_some_reasons = only_some_reasons
-                self._distribution_point = distribution_point
+                self._only_contains_user_certs == only_contains_user_certs and
+                self._only_contains_ca_certs == only_contains_ca_certs and
+                self._indirect_crl == indirect_crl and
+                self._only_contains_attribute_certs == only_contains_attribute_certs and
+                self._only_some_reasons == only_some_reasons and
+                self._distribution_point == distribution_point
             )
 
         def __ne__(self, other):
