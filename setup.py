@@ -14,10 +14,20 @@ from distutils.command.build import build
 
 import pkg_resources
 
+import setuptools
 from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.test import test
 
+
+if (
+    pkg_resources.parse_version(setuptools.__version__) <
+    pkg_resources.parse_version("18.5")
+):
+    raise RuntimeError(
+        "cryptography requires setuptools 18.5 or newer, please upgrade to a "
+        "newer version of setuptools"
+    )
 
 base_dir = os.path.dirname(__file__)
 src_dir = os.path.join(base_dir, "src")
@@ -45,13 +55,12 @@ else:
     setup_requirements.append("cffi>=1.7")
 
 test_requirements = [
-    "pytest>=3.2.1",
+    "pytest>=3.2.1,!=3.3.0",
     "pretend",
     "iso8601",
     "pytz",
+    "hypothesis>=1.11.4",
 ]
-if sys.version_info[:2] > (2, 6):
-    test_requirements.append("hypothesis>=1.11.4")
 
 
 # If there's no vectors locally that probably means we are in a tarball and
@@ -260,7 +269,6 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",
@@ -283,16 +291,16 @@ setup(
     tests_require=test_requirements,
     extras_require={
         ":python_version < '3'": ["enum34", "ipaddress"],
-        ":python_implementation != 'PyPy'": ["cffi >= 1.7"],
+        ":platform_python_implementation != 'PyPy'": ["cffi >= 1.7"],
 
         "test": test_requirements,
         "docstest": [
             "doc8",
             "pyenchant >= 1.6.11",
             "readme_renderer >= 16.0",
-            "sphinx != 1.6.1, != 1.6.2, != 1.6.3, != 1.6.4",
+            "sphinx >= 1.6.5",
             "sphinx_rtd_theme",
-            "sphinxcontrib-spelling",
+            "sphinxcontrib-spelling >= 4.0.1",
         ],
         "pep8test": [
             "flake8",

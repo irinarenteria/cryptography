@@ -12,7 +12,6 @@ from email.utils import parseaddr
 import idna
 
 import six
-
 from six.moves import urllib_parse
 
 from cryptography import utils
@@ -53,77 +52,55 @@ class RFC822Name(object):
     def __init__(self, value):
         if isinstance(value, six.text_type):
             try:
-                value = value.encode("ascii")
+                value.encode("ascii")
             except UnicodeEncodeError:
                 value = self._idna_encode(value)
                 warnings.warn(
-                    "RFC822Name values should be passed as bytes, not strings."
-                    " Support for passing unicode strings will be removed in a"
-                    " future version.",
+                    "RFC822Name values should be passed as an A-label string. "
+                    "This means unicode characters should be encoded via "
+                    "idna. Support for passing unicode strings (aka U-label) "
+                    "will be removed in a future version.",
                     utils.DeprecatedIn21,
                     stacklevel=2,
                 )
-            else:
-                warnings.warn(
-                    "RFC822Name values should be passed as bytes, not strings."
-                    " Support for passing unicode strings will be removed in a"
-                    " future version.",
-                    utils.DeprecatedIn21,
-                    stacklevel=2,
-                )
-        elif not isinstance(value, bytes):
-            raise TypeError("value must be bytes")
+        else:
+            raise TypeError("value must be string")
 
-        name, address = parseaddr(value.decode("ascii"))
+        name, address = parseaddr(value)
         if name or not address:
             # parseaddr has found a name (e.g. Name <email>) or the entire
             # value is an empty string.
             raise ValueError("Invalid rfc822name value")
 
-        self._bytes_value = value
+        self._value = value
 
-    bytes_value = utils.read_only_property("_bytes_value")
+    value = utils.read_only_property("_value")
+
+    @classmethod
+    def _init_without_validation(cls, value):
+        instance = cls.__new__(cls)
+        instance._value = value
+        return instance
 
     def _idna_encode(self, value):
         _, address = parseaddr(value)
         parts = address.split(u"@")
-        return parts[0].encode("ascii") + b"@" + idna.encode(parts[1])
-
-    @property
-    def value(self):
-        warnings.warn(
-            "RFC822Name.bytes_value should be used instead of RFC822Name.value"
-            "; it contains the name as raw bytes, instead of as an idna-"
-            "decoded unicode string. RFC822Name.value will be removed in a "
-            "future version.",
-            utils.DeprecatedIn21,
-            stacklevel=2
-        )
-        _, address = parseaddr(self.bytes_value.decode("ascii"))
-        parts = address.split(u"@")
-        if len(parts) == 1:
-            # Single label email name. This is valid for local delivery.
-            # No IDNA decoding needed since there is no domain component.
-            return address
-        else:
-            # A normal email of the form user@domain.com. Let's attempt to
-            # encode the domain component and reconstruct the address.
-            return parts[0] + u"@" + idna.decode(parts[1])
+        return parts[0] + "@" + idna.encode(parts[1]).decode("ascii")
 
     def __repr__(self):
-        return "<RFC822Name(bytes_value={0!r})>".format(self.bytes_value)
+        return "<RFC822Name(value={0!r})>".format(self.value)
 
     def __eq__(self, other):
         if not isinstance(other, RFC822Name):
             return NotImplemented
 
-        return self.bytes_value == other.bytes_value
+        return self.value == other.value
 
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
-        return hash(self.bytes_value)
+        return hash(self.value)
 
 
 def _idna_encode(value):
@@ -131,8 +108,8 @@ def _idna_encode(value):
     for prefix in ['*.', '.']:
         if value.startswith(prefix):
             value = value[len(prefix):]
-            return prefix.encode('ascii') + idna.encode(value)
-    return idna.encode(value)
+            return prefix + idna.encode(value).decode("ascii")
+    return idna.encode(value).decode("ascii")
 
 
 @utils.register_interface(GeneralName)
@@ -140,73 +117,44 @@ class DNSName(object):
     def __init__(self, value):
         if isinstance(value, six.text_type):
             try:
-                value = value.encode("ascii")
+                value.encode("ascii")
             except UnicodeEncodeError:
                 value = _idna_encode(value)
                 warnings.warn(
-                    "DNSName values should be passed as idna-encoded bytes, "
-                    "not strings. Support for passing unicode strings will be "
-                    "removed in a future version.",
+                    "DNSName values should be passed as an A-label string. "
+                    "This means unicode characters should be encoded via "
+                    "idna. Support for passing unicode strings (aka U-label) "
+                    "will be removed in a future version.",
                     utils.DeprecatedIn21,
                     stacklevel=2,
                 )
-            else:
-                warnings.warn(
-                    "DNSName values should be passed as bytes, not strings. "
-                    "Support for passing unicode strings will be removed in a "
-                    "future version.",
-                    utils.DeprecatedIn21,
-                    stacklevel=2,
-                )
-        elif not isinstance(value, bytes):
-            raise TypeError("value must be bytes")
-
-        self._bytes_value = value
-
-    bytes_value = utils.read_only_property("_bytes_value")
-
-    @property
-    def value(self):
-        warnings.warn(
-            "DNSName.bytes_value should be used instead of DNSName.value; it "
-            "contains the DNS name as raw bytes, instead of as an idna-decoded"
-            " unicode string. DNSName.value will be removed in a future "
-            "version.",
-            utils.DeprecatedIn21,
-            stacklevel=2
-        )
-        data = self._bytes_value
-        if not data:
-            decoded = u""
-        elif data.startswith(b"*."):
-            # This is a wildcard name. We need to remove the leading wildcard,
-            # IDNA decode, then re-add the wildcard. Wildcard characters should
-            # always be left-most (RFC 2595 section 2.4).
-            decoded = u"*." + idna.decode(data[2:])
         else:
-            # Not a wildcard, decode away. If the string has a * in it anywhere
-            # invalid this will raise an InvalidCodePoint
-            decoded = idna.decode(data)
-            if data.startswith(b"."):
-                # idna strips leading periods. Name constraints can have that
-                # so we need to re-add it. Sigh.
-                decoded = u"." + decoded
-        return decoded
+            raise TypeError("value must be string")
+
+        self._value = value
+
+    value = utils.read_only_property("_value")
+
+    @classmethod
+    def _init_without_validation(cls, value):
+        instance = cls.__new__(cls)
+        instance._value = value
+        return instance
 
     def __repr__(self):
-        return "<DNSName(bytes_value={0!r})>".format(self.bytes_value)
+        return "<DNSName(value={0!r})>".format(self.value)
 
     def __eq__(self, other):
         if not isinstance(other, DNSName):
             return NotImplemented
 
-        return self.bytes_value == other.bytes_value
+        return self.value == other.value
 
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
-        return hash(self.bytes_value)
+        return hash(self.value)
 
 
 @utils.register_interface(GeneralName)
@@ -214,30 +162,29 @@ class UniformResourceIdentifier(object):
     def __init__(self, value):
         if isinstance(value, six.text_type):
             try:
-                value = value.encode("ascii")
+                value.encode("ascii")
             except UnicodeEncodeError:
                 value = self._idna_encode(value)
                 warnings.warn(
-                    "UniformResourceIdentifier values should be passed as "
-                    "bytes with the hostname idna encoded, not strings. "
-                    "Support for passing unicode strings will be removed in a "
-                    "future version.",
+                    "URI values should be passed as an A-label string. "
+                    "This means unicode characters should be encoded via "
+                    "idna. Support for passing unicode strings (aka U-label) "
+                    " will be removed in a future version.",
                     utils.DeprecatedIn21,
                     stacklevel=2,
                 )
-            else:
-                warnings.warn(
-                    "UniformResourceIdentifier values should be passed as "
-                    "bytes with the hostname idna encoded, not strings. "
-                    "Support for passing unicode strings will be removed in a "
-                    "future version.",
-                    utils.DeprecatedIn21,
-                    stacklevel=2,
-                )
-        elif not isinstance(value, bytes):
-            raise TypeError("value must be bytes")
+        else:
+            raise TypeError("value must be string")
 
-        self._bytes_value = value
+        self._value = value
+
+    value = utils.read_only_property("_value")
+
+    @classmethod
+    def _init_without_validation(cls, value):
+        instance = cls.__new__(cls)
+        instance._value = value
+        return instance
 
     def _idna_encode(self, value):
         parsed = urllib_parse.urlparse(value)
@@ -259,58 +206,22 @@ class UniformResourceIdentifier(object):
             parsed.params,
             parsed.query,
             parsed.fragment
-        )).encode("ascii")
-
-    @property
-    def value(self):
-        warnings.warn(
-            "UniformResourceIdentifier.bytes_value should be used instead of "
-            "UniformResourceIdentifier.value; it contains the name as raw "
-            "bytes, instead of as an idna-decoded unicode string. "
-            "UniformResourceIdentifier.value will be removed in a future "
-            "version.",
-            utils.DeprecatedIn21,
-            stacklevel=2
-        )
-        parsed = urllib_parse.urlparse(self.bytes_value)
-        if not parsed.hostname:
-            # There's no idna here so we can immediately return
-            return self.bytes_value.decode("utf-8")
-        elif parsed.port:
-            netloc = idna.decode(parsed.hostname) + ":{0}".format(parsed.port)
-        else:
-            netloc = idna.decode(parsed.hostname)
-
-        # Note that building a URL in this fashion means it should be
-        # semantically indistinguishable from the original but is not
-        # guaranteed to be exactly the same.
-        return urllib_parse.urlunparse((
-            parsed.scheme.decode('utf8'),
-            netloc,
-            parsed.path.decode('utf8'),
-            parsed.params.decode('utf8'),
-            parsed.query.decode('utf8'),
-            parsed.fragment.decode('utf8')
         ))
 
-    bytes_value = utils.read_only_property("_bytes_value")
-
     def __repr__(self):
-        return "<UniformResourceIdentifier(bytes_value={0!r})>".format(
-            self.bytes_value
-        )
+        return "<UniformResourceIdentifier(value={0!r})>".format(self.value)
 
     def __eq__(self, other):
         if not isinstance(other, UniformResourceIdentifier):
             return NotImplemented
 
-        return self.bytes_value == other.bytes_value
+        return self.value == other.value
 
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
-        return hash(self.bytes_value)
+        return hash(self.value)
 
 
 @utils.register_interface(GeneralName)

@@ -1,38 +1,74 @@
 Changelog
 =========
 
+.. _v2-2:
 
-.. _v2-1:
-
-2.1 - `master`_
-~~~~~~~~~~~~~~~~~
+2.2 - `master`_
+~~~~~~~~~~~~~~~
 
 .. note:: This version is not yet released and is under active development.
 
+* **BACKWARDS INCOMPATIBLE:** Support for Python 2.6 has been dropped.
+* Added token rotation support to :doc:`Fernet </fernet>` with
+  :meth:`~cryptography.fernet.MultiFernet.rotate`.
+
+.. _v2-1-4:
+
+2.1.4 - 2017-11-29
+~~~~~~~~~~~~~~~~~~
+
+* Added ``X509_up_ref`` for an upcoming ``pyOpenSSL`` release.
+
+.. _v2-1-3:
+
+2.1.3 - 2017-11-02
+~~~~~~~~~~~~~~~~~~
+
+* Updated Windows, macOS, and ``manylinux1`` wheels to be compiled with
+  OpenSSL 1.1.0g.
+
+.. _v2-1-2:
+
+2.1.2 - 2017-10-24
+~~~~~~~~~~~~~~~~~~
+
+* Corrected a bug with the ``manylinux1`` wheels where OpenSSL's stack was
+  marked executable.
+
+.. _v2-1-1:
+
+2.1.1 - 2017-10-12
+~~~~~~~~~~~~~~~~~~
+
+* Fixed support for install with the system ``pip`` on Ubuntu 16.04.
+
+.. _v2-1:
+
+2.1 - 2017-10-11
+~~~~~~~~~~~~~~~~
+
+* **FINAL DEPRECATION** Python 2.6 support is deprecated, and will be removed
+  in the next release of ``cryptography``.
 * **BACKWARDS INCOMPATIBLE:** ``Whirlpool``, ``RIPEMD160``, and
   ``UnsupportedExtension`` have been removed in accordance with our
   :doc:`/api-stability` policy.
+* **BACKWARDS INCOMPATIBLE:**
+  :attr:`DNSName.value <cryptography.x509.DNSName.value>`,
+  :attr:`RFC822Name.value <cryptography.x509.RFC822Name.value>`, and
+  :attr:`UniformResourceIdentifier.value
+  <cryptography.x509.UniformResourceIdentifier.value>`
+  will now return an :term:`A-label` string when parsing a certificate
+  containing an internationalized domain name (IDN) or if the caller passed
+  a :term:`U-label` to the constructor. See below for additional deprecations
+  related to this change.
 * Installing ``cryptography`` now requires ``pip`` 6 or newer.
-* Deprecated passing unicode to the :class:`~cryptography.x509.DNSName`
-  constructor. Instead, users should pass DNS names as ``bytes``, with ``idna``
-  encoding if necessary. In addition, the
-  :attr:`~cryptography.x509.DNSName.value` attribute was deprecated, users
-  should use :attr:`~cryptography.x509.DNSName.bytes_value` to access the
-  raw DNS name.
-* Deprecated passing unicode to the
-  :class:`~cryptography.x509.UniformResourceIdentifier` constructor. Instead,
-  users should pass URIs as ``bytes``, with ``idna`` encoding if
-  necessary. In addition, the
-  :attr:`~cryptography.x509.UniformResourceIdentifier.value` attribute was
-  deprecated, users should use
-  :attr:`~cryptography.x509.UniformResourceIdentifier.bytes_value` to access
-  the raw value.
-* Deprecated passing unicode to the :class:`~cryptography.x509.RFC822Name`
-  constructor. Instead, users should pass email addresses as ``bytes``, with
-  ``idna`` encoding of the hostname if necessary. In addition, the
-  :attr:`~cryptography.x509.RFC822Name.value` attribute was deprecated, users
-  should use :attr:`~cryptography.x509.RFC822Name.bytes_value` to access the
-  raw value.
+* Deprecated passing :term:`U-label` strings to the
+  :class:`~cryptography.x509.DNSName`,
+  :class:`~cryptography.x509.UniformResourceIdentifier`, and
+  :class:`~cryptography.x509.RFC822Name` constructors. Instead, users should
+  pass values as :term:`A-label` strings with ``idna`` encoding if necessary.
+  This change will not affect anyone who is not processing internationalized
+  domains.
 * Added support for
   :class:`~cryptography.hazmat.primitives.ciphers.algorithms.ChaCha20`. In
   most cases users should choose
@@ -43,6 +79,9 @@ Changelog
 * Support :class:`~cryptography.hazmat.primitives.hashes.BLAKE2b` and
   :class:`~cryptography.hazmat.primitives.hashes.BLAKE2s` with
   :class:`~cryptography.hazmat.primitives.hmac.HMAC`.
+* Added support for
+  :class:`~cryptography.hazmat.primitives.ciphers.modes.XTS` mode for
+  AES.
 * Added support for using labels with
   :class:`~cryptography.hazmat.primitives.asymmetric.padding.OAEP` when using
   OpenSSL 1.0.2 or greater.
@@ -53,7 +92,6 @@ Changelog
   extension. This is commonly used for enabling ``OCSP Must-Staple`` in
   certificates.
 * Add support for the :class:`~cryptography.x509.FreshestCRL` extension.
-
 
 .. _v2-0-3:
 

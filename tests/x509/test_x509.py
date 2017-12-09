@@ -226,11 +226,11 @@ class TestCertificateRevocationList(object):
         assert aia.value == x509.AuthorityInformationAccess([
             x509.AccessDescription(
                 AuthorityInformationAccessOID.CA_ISSUERS,
-                x509.DNSName(b"cryptography.io")
+                x509.DNSName(u"cryptography.io")
             )
         ])
         assert ian.value == x509.IssuerAlternativeName([
-            x509.UniformResourceIdentifier(b"https://cryptography.io"),
+            x509.UniformResourceIdentifier(u"https://cryptography.io"),
         ])
 
     def test_delta_crl_indicator(self, backend):
@@ -278,11 +278,10 @@ class TestCertificateRevocationList(object):
             backend
         )
 
-        verifier = ca_cert.public_key().verifier(
-            crl.signature, padding.PKCS1v15(), crl.signature_hash_algorithm
+        ca_cert.public_key().verify(
+            crl.signature, crl.tbs_certlist_bytes,
+            padding.PKCS1v15(), crl.signature_hash_algorithm
         )
-        verifier.update(crl.tbs_certlist_bytes)
-        verifier.verify()
 
     def test_public_bytes_pem(self, backend):
         crl = _load_cert(
@@ -577,7 +576,7 @@ class TestRSACertificate(object):
             backend
         )
 
-        with pytest.deprecated_call():
+        with pytest.warns(utils.CryptographyDeprecationWarning):
             assert cert.serial == 2
             assert cert.serial_number == 2
 
@@ -588,7 +587,7 @@ class TestRSACertificate(object):
             backend
         )
 
-        with pytest.deprecated_call():
+        with pytest.warns(utils.CryptographyDeprecationWarning):
             cert.serial
 
     def test_load_der_cert(self, backend):
@@ -654,11 +653,10 @@ class TestRSACertificate(object):
             b"03550403130848656c6c6f204341820900a06cb4b955f7f4db300c0603551d1"
             b"3040530030101ff"
         )
-        verifier = cert.public_key().verifier(
-            cert.signature, padding.PKCS1v15(), cert.signature_hash_algorithm
+        cert.public_key().verify(
+            cert.signature, cert.tbs_certificate_bytes,
+            padding.PKCS1v15(), cert.signature_hash_algorithm
         )
-        verifier.update(cert.tbs_certificate_bytes)
-        verifier.verify()
 
     def test_issuer(self, backend):
         cert = _load_cert(
@@ -775,6 +773,24 @@ class TestRSACertificate(object):
                 NameOID.COMMON_NAME,
                 u'We heart UTF8!\u2122'
             )
+        ]
+
+    def test_non_ascii_dns_name(self, backend):
+        cert = _load_cert(
+            os.path.join("x509", "utf8-dnsname.pem"),
+            x509.load_pem_x509_certificate,
+            backend
+        )
+        san = cert.extensions.get_extension_for_class(
+            x509.SubjectAlternativeName
+        ).value
+
+        names = san.get_values_for_type(x509.DNSName)
+
+        assert names == [
+            u'partner.biztositas.hu', u'biztositas.hu', u'*.biztositas.hu',
+            u'biztos\xedt\xe1s.hu', u'*.biztos\xedt\xe1s.hu',
+            u'xn--biztosts-fza2j.hu', u'*.xn--biztosts-fza2j.hu'
         ]
 
     def test_all_subject_name_types(self, backend):
@@ -1243,8 +1259,8 @@ class TestRSACertificateRequest(object):
             ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
         assert list(ext.value) == [
-            x509.DNSName(b"cryptography.io"),
-            x509.DNSName(b"sub.cryptography.io"),
+            x509.DNSName(u"cryptography.io"),
+            x509.DNSName(u"sub.cryptography.io"),
         ]
 
     def test_public_bytes_pem(self, backend):
@@ -1339,13 +1355,12 @@ class TestRSACertificateRequest(object):
             b"db048d51921e50766a37b1b130ee6b11f507d20a834001e8de16a92c14f2e964"
             b"a30203010001a000"
         )
-        verifier = request.public_key().verifier(
+        request.public_key().verify(
             request.signature,
+            request.tbs_certrequest_bytes,
             padding.PKCS1v15(),
             request.signature_hash_algorithm
         )
-        verifier.update(request.tbs_certrequest_bytes)
-        verifier.verify()
 
     def test_public_bytes_invalid_encoding(self, backend):
         request = _load_cert(
@@ -1472,7 +1487,7 @@ class TestRSACertificateRequest(object):
         ).add_extension(
             x509.BasicConstraints(ca=False, path_length=None), True,
         ).add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(b"cryptography.io")]),
+            x509.SubjectAlternativeName([x509.DNSName(u"cryptography.io")]),
             critical=False,
         ).not_valid_before(
             not_valid_before
@@ -1494,7 +1509,7 @@ class TestRSACertificateRequest(object):
             ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
         assert list(subject_alternative_name.value) == [
-            x509.DNSName(b"cryptography.io"),
+            x509.DNSName(u"cryptography.io"),
         ]
 
     def test_build_cert_private_type_encoding(self, backend):
@@ -1610,7 +1625,7 @@ class TestCertificateBuilder(object):
         aia = x509.AuthorityInformationAccess([
             x509.AccessDescription(
                 x509.ObjectIdentifier("2.999.7"),
-                x509.UniformResourceIdentifier(b"http://example.com")
+                x509.UniformResourceIdentifier(u"http://example.com")
             ),
         ])
 
@@ -1631,6 +1646,59 @@ class TestCertificateBuilder(object):
         )
 
         builder.sign(private_key, hashes.SHA256(), backend)
+
+    @pytest.mark.requires_backend_interface(interface=RSABackend)
+    @pytest.mark.requires_backend_interface(interface=X509Backend)
+    def test_subject_dn_asn1_types(self, backend):
+        private_key = RSA_KEY_2048.private_key(backend)
+
+        name = x509.Name([
+            x509.NameAttribute(NameOID.COMMON_NAME, u"mysite.com"),
+            x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
+            x509.NameAttribute(NameOID.LOCALITY_NAME, u"value"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"value"),
+            x509.NameAttribute(NameOID.STREET_ADDRESS, u"value"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"value"),
+            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"value"),
+            x509.NameAttribute(NameOID.SERIAL_NUMBER, u"value"),
+            x509.NameAttribute(NameOID.SURNAME, u"value"),
+            x509.NameAttribute(NameOID.GIVEN_NAME, u"value"),
+            x509.NameAttribute(NameOID.TITLE, u"value"),
+            x509.NameAttribute(NameOID.GENERATION_QUALIFIER, u"value"),
+            x509.NameAttribute(NameOID.X500_UNIQUE_IDENTIFIER, u"value"),
+            x509.NameAttribute(NameOID.DN_QUALIFIER, u"value"),
+            x509.NameAttribute(NameOID.PSEUDONYM, u"value"),
+            x509.NameAttribute(NameOID.USER_ID, u"value"),
+            x509.NameAttribute(NameOID.DOMAIN_COMPONENT, u"value"),
+            x509.NameAttribute(NameOID.EMAIL_ADDRESS, u"value"),
+            x509.NameAttribute(NameOID.JURISDICTION_COUNTRY_NAME, u"US"),
+            x509.NameAttribute(NameOID.JURISDICTION_LOCALITY_NAME, u"value"),
+            x509.NameAttribute(
+                NameOID.JURISDICTION_STATE_OR_PROVINCE_NAME, u"value"
+            ),
+            x509.NameAttribute(NameOID.BUSINESS_CATEGORY, u"value"),
+            x509.NameAttribute(NameOID.POSTAL_ADDRESS, u"value"),
+            x509.NameAttribute(NameOID.POSTAL_CODE, u"value"),
+        ])
+        cert = x509.CertificateBuilder().subject_name(
+            name
+        ).issuer_name(
+            name
+        ).public_key(
+            private_key.public_key()
+        ).serial_number(
+            777
+        ).not_valid_before(
+            datetime.datetime(1999, 1, 1)
+        ).not_valid_after(
+            datetime.datetime(2020, 1, 1)
+        ).sign(private_key, hashes.SHA256(), backend)
+
+        for dn in (cert.subject, cert.issuer):
+            for oid, asn1_type in TestNameAttribute.EXPECTED_TYPES:
+                assert dn.get_attributes_for_oid(
+                    oid
+                )[0]._type == asn1_type
 
     @pytest.mark.skipif(sys.platform != "win32", reason="Requires windows")
     @pytest.mark.parametrize(
@@ -2122,7 +2190,7 @@ class TestCertificateBuilder(object):
         ).add_extension(
             x509.BasicConstraints(ca=False, path_length=None), True,
         ).add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(b"cryptography.io")]),
+            x509.SubjectAlternativeName([x509.DNSName(u"cryptography.io")]),
             critical=False,
         ).not_valid_before(
             not_valid_before
@@ -2144,7 +2212,7 @@ class TestCertificateBuilder(object):
             ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
         assert list(subject_alternative_name.value) == [
-            x509.DNSName(b"cryptography.io"),
+            x509.DNSName(u"cryptography.io"),
         ]
 
     @pytest.mark.requires_backend_interface(interface=EllipticCurveBackend)
@@ -2168,7 +2236,7 @@ class TestCertificateBuilder(object):
         ).add_extension(
             x509.BasicConstraints(ca=False, path_length=None), True,
         ).add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(b"cryptography.io")]),
+            x509.SubjectAlternativeName([x509.DNSName(u"cryptography.io")]),
             critical=False,
         ).not_valid_before(
             not_valid_before
@@ -2190,7 +2258,7 @@ class TestCertificateBuilder(object):
             ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
         assert list(subject_alternative_name.value) == [
-            x509.DNSName(b"cryptography.io"),
+            x509.DNSName(u"cryptography.io"),
         ]
 
     @pytest.mark.requires_backend_interface(interface=RSABackend)
@@ -2224,6 +2292,19 @@ class TestCertificateBuilder(object):
     @pytest.mark.parametrize(
         "add_ext",
         [
+            x509.SubjectAlternativeName(
+                [
+                    # These examples exist to verify compatibility with
+                    # certificates that have utf8 encoded data in the ia5string
+                    x509.DNSName._init_without_validation(u'a\xedt\xe1s.test'),
+                    x509.RFC822Name._init_without_validation(
+                        u'test@a\xedt\xe1s.test'
+                    ),
+                    x509.UniformResourceIdentifier._init_without_validation(
+                        u'http://a\xedt\xe1s.test'
+                    ),
+                ]
+            ),
             x509.CertificatePolicies([
                 x509.PolicyInformation(
                     x509.ObjectIdentifier("2.16.840.1.12345.1.2.3.4.1"),
@@ -2279,7 +2360,7 @@ class TestCertificateBuilder(object):
                 )
             ]),
             x509.IssuerAlternativeName([
-                x509.DNSName(b"myissuer"),
+                x509.DNSName(u"myissuer"),
                 x509.RFC822Name(u"email@domain.com"),
             ]),
             x509.ExtendedKeyUsage([
@@ -2308,7 +2389,7 @@ class TestCertificateBuilder(object):
                         ipaddress.IPv6Network(u"FF:FF:0:0:0:0:0:0/128")
                     ),
                 ],
-                excluded_subtrees=[x509.DNSName(b"name.local")]
+                excluded_subtrees=[x509.DNSName(u"name.local")]
             ),
             x509.NameConstraints(
                 permitted_subtrees=[
@@ -2318,7 +2399,7 @@ class TestCertificateBuilder(object):
             ),
             x509.NameConstraints(
                 permitted_subtrees=None,
-                excluded_subtrees=[x509.DNSName(b"name.local")]
+                excluded_subtrees=[x509.DNSName(u"name.local")]
             ),
             x509.PolicyConstraints(
                 require_explicit_policy=None,
@@ -2717,6 +2798,47 @@ class TestCertificateSigningRequestBuilder(object):
         ]
 
     @pytest.mark.requires_backend_interface(interface=RSABackend)
+    def test_subject_dn_asn1_types(self, backend):
+        private_key = RSA_KEY_2048.private_key(backend)
+
+        request = x509.CertificateSigningRequestBuilder().subject_name(
+            x509.Name([
+                x509.NameAttribute(NameOID.COMMON_NAME, u"mysite.com"),
+                x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
+                x509.NameAttribute(NameOID.LOCALITY_NAME, u"value"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"value"),
+                x509.NameAttribute(NameOID.STREET_ADDRESS, u"value"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"value"),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"value"),
+                x509.NameAttribute(NameOID.SERIAL_NUMBER, u"value"),
+                x509.NameAttribute(NameOID.SURNAME, u"value"),
+                x509.NameAttribute(NameOID.GIVEN_NAME, u"value"),
+                x509.NameAttribute(NameOID.TITLE, u"value"),
+                x509.NameAttribute(NameOID.GENERATION_QUALIFIER, u"value"),
+                x509.NameAttribute(NameOID.X500_UNIQUE_IDENTIFIER, u"value"),
+                x509.NameAttribute(NameOID.DN_QUALIFIER, u"value"),
+                x509.NameAttribute(NameOID.PSEUDONYM, u"value"),
+                x509.NameAttribute(NameOID.USER_ID, u"value"),
+                x509.NameAttribute(NameOID.DOMAIN_COMPONENT, u"value"),
+                x509.NameAttribute(NameOID.EMAIL_ADDRESS, u"value"),
+                x509.NameAttribute(NameOID.JURISDICTION_COUNTRY_NAME, u"US"),
+                x509.NameAttribute(
+                    NameOID.JURISDICTION_LOCALITY_NAME, u"value"
+                ),
+                x509.NameAttribute(
+                    NameOID.JURISDICTION_STATE_OR_PROVINCE_NAME, u"value"
+                ),
+                x509.NameAttribute(NameOID.BUSINESS_CATEGORY, u"value"),
+                x509.NameAttribute(NameOID.POSTAL_ADDRESS, u"value"),
+                x509.NameAttribute(NameOID.POSTAL_CODE, u"value"),
+            ])
+        ).sign(private_key, hashes.SHA256(), backend)
+        for oid, asn1_type in TestNameAttribute.EXPECTED_TYPES:
+            assert request.subject.get_attributes_for_oid(
+                oid
+            )[0]._type == asn1_type
+
+    @pytest.mark.requires_backend_interface(interface=RSABackend)
     def test_build_ca_request_with_multivalue_rdns(self, backend):
         private_key = RSA_KEY_2048.private_key(backend)
         subject = x509.Name([
@@ -2847,7 +2969,7 @@ class TestCertificateSigningRequestBuilder(object):
                 x509.NameAttribute(NameOID.COUNTRY_NAME, u'US'),
             ])
         ).add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(b"cryptography.io")]),
+            x509.SubjectAlternativeName([x509.DNSName(u"cryptography.io")]),
             critical=False,
         ).add_extension(
             DummyExtension(), False
@@ -2933,7 +3055,7 @@ class TestCertificateSigningRequestBuilder(object):
         request = builder.subject_name(
             x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, u'US')])
         ).add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(b"cryptography.io")]),
+            x509.SubjectAlternativeName([x509.DNSName(u"cryptography.io")]),
             critical=False,
         ).add_extension(
             x509.BasicConstraints(ca=True, path_length=2), critical=True
@@ -2950,7 +3072,7 @@ class TestCertificateSigningRequestBuilder(object):
         ext = request.extensions.get_extension_for_oid(
             ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
-        assert list(ext.value) == [x509.DNSName(b"cryptography.io")]
+        assert list(ext.value) == [x509.DNSName(u"cryptography.io")]
 
     def test_set_subject_twice(self):
         builder = x509.CertificateSigningRequestBuilder()
@@ -2970,8 +3092,8 @@ class TestCertificateSigningRequestBuilder(object):
         private_key = RSA_KEY_2048.private_key(backend)
 
         san = x509.SubjectAlternativeName([
-            x509.DNSName(b"example.com"),
-            x509.DNSName(b"*.example.com"),
+            x509.DNSName(u"example.com"),
+            x509.DNSName(u"*.example.com"),
             x509.RegisteredID(x509.ObjectIdentifier("1.2.3.4.5.6.7")),
             x509.DirectoryName(x509.Name([
                 x509.NameAttribute(NameOID.COMMON_NAME, u'PyCA'),
@@ -3092,11 +3214,11 @@ class TestCertificateSigningRequestBuilder(object):
         aia = x509.AuthorityInformationAccess([
             x509.AccessDescription(
                 AuthorityInformationAccessOID.OCSP,
-                x509.UniformResourceIdentifier(b"http://ocsp.domain.com")
+                x509.UniformResourceIdentifier(u"http://ocsp.domain.com")
             ),
             x509.AccessDescription(
                 AuthorityInformationAccessOID.CA_ISSUERS,
-                x509.UniformResourceIdentifier(b"http://domain.com/ca.crt")
+                x509.UniformResourceIdentifier(u"http://domain.com/ca.crt")
             )
         ])
 
@@ -3380,11 +3502,10 @@ class TestDSACertificate(object):
             b"4c7464311430120603550403130b5079434120445341204341820900a37352e"
             b"0b2142f86300c0603551d13040530030101ff"
         )
-        verifier = cert.public_key().verifier(
-            cert.signature, cert.signature_hash_algorithm
+        cert.public_key().verify(
+            cert.signature, cert.tbs_certificate_bytes,
+            cert.signature_hash_algorithm
         )
-        verifier.update(cert.tbs_certificate_bytes)
-        verifier.verify()
 
 
 @pytest.mark.requires_backend_interface(interface=DSABackend)
@@ -3454,12 +3575,11 @@ class TestDSACertificateRequest(object):
             b"04a697bc8fd965b952f9f7e850edf13c8acdb5d753b6d10e59e0b5732e3c82ba"
             b"fa140342bc4a3bba16bd0681c8a6a2dbbb7efe6ce2b8463b170ba000"
         )
-        verifier = request.public_key().verifier(
+        request.public_key().verify(
             request.signature,
+            request.tbs_certrequest_bytes,
             request.signature_hash_algorithm
         )
-        verifier.update(request.tbs_certrequest_bytes)
-        verifier.verify()
 
 
 @pytest.mark.requires_backend_interface(interface=EllipticCurveBackend)
@@ -3534,11 +3654,10 @@ class TestECDSACertificate(object):
             b"f300e0603551d0f0101ff040403020186301d0603551d0e04160414b3db48a4"
             b"f9a1c5d8ae3641cc1163696229bc4bc6"
         )
-        verifier = cert.public_key().verifier(
-            cert.signature, ec.ECDSA(cert.signature_hash_algorithm)
+        cert.public_key().verify(
+            cert.signature, cert.tbs_certificate_bytes,
+            ec.ECDSA(cert.signature_hash_algorithm)
         )
-        verifier.update(cert.tbs_certificate_bytes)
-        verifier.verify()
 
     def test_load_ecdsa_no_named_curve(self, backend):
         _skip_curve_unsupported(backend, ec.SECP256R1())
@@ -3613,12 +3732,10 @@ class TestECDSACertificateRequest(object):
             b"04d8b32a551038d09086803a6d3fb91a1a1167ec02158b00efad39c9396462f"
             b"accff0ffaf7155812909d3726bd59fde001cff4bb9b2f5af8cbaa000"
         )
-        verifier = request.public_key().verifier(
-            request.signature,
+        request.public_key().verify(
+            request.signature, request.tbs_certrequest_bytes,
             ec.ECDSA(request.signature_hash_algorithm)
         )
-        verifier.update(request.tbs_certrequest_bytes)
-        verifier.verify()
 
 
 @pytest.mark.requires_backend_interface(interface=X509Backend)
@@ -3637,6 +3754,47 @@ class TestOtherCertificate(object):
 
 
 class TestNameAttribute(object):
+    EXPECTED_TYPES = [
+        (NameOID.COMMON_NAME, _ASN1Type.UTF8String),
+        (NameOID.COUNTRY_NAME, _ASN1Type.PrintableString),
+        (NameOID.LOCALITY_NAME, _ASN1Type.UTF8String),
+        (NameOID.STATE_OR_PROVINCE_NAME, _ASN1Type.UTF8String),
+        (NameOID.STREET_ADDRESS, _ASN1Type.UTF8String),
+        (NameOID.ORGANIZATION_NAME, _ASN1Type.UTF8String),
+        (NameOID.ORGANIZATIONAL_UNIT_NAME, _ASN1Type.UTF8String),
+        (NameOID.SERIAL_NUMBER, _ASN1Type.PrintableString),
+        (NameOID.SURNAME, _ASN1Type.UTF8String),
+        (NameOID.GIVEN_NAME, _ASN1Type.UTF8String),
+        (NameOID.TITLE, _ASN1Type.UTF8String),
+        (NameOID.GENERATION_QUALIFIER, _ASN1Type.UTF8String),
+        (NameOID.X500_UNIQUE_IDENTIFIER, _ASN1Type.UTF8String),
+        (NameOID.DN_QUALIFIER, _ASN1Type.PrintableString),
+        (NameOID.PSEUDONYM, _ASN1Type.UTF8String),
+        (NameOID.USER_ID, _ASN1Type.UTF8String),
+        (NameOID.DOMAIN_COMPONENT, _ASN1Type.IA5String),
+        (NameOID.EMAIL_ADDRESS, _ASN1Type.IA5String),
+        (NameOID.JURISDICTION_COUNTRY_NAME, _ASN1Type.PrintableString),
+        (NameOID.JURISDICTION_LOCALITY_NAME, _ASN1Type.UTF8String),
+        (
+            NameOID.JURISDICTION_STATE_OR_PROVINCE_NAME,
+            _ASN1Type.UTF8String
+        ),
+        (NameOID.BUSINESS_CATEGORY, _ASN1Type.UTF8String),
+        (NameOID.POSTAL_ADDRESS, _ASN1Type.UTF8String),
+        (NameOID.POSTAL_CODE, _ASN1Type.UTF8String),
+    ]
+
+    def test_default_types(self):
+        for oid, asn1_type in TestNameAttribute.EXPECTED_TYPES:
+            na = x509.NameAttribute(oid, u"US")
+            assert na._type == asn1_type
+
+    def test_alternate_type(self):
+        na2 = x509.NameAttribute(
+            NameOID.COMMON_NAME, u"common", _ASN1Type.IA5String
+        )
+        assert na2._type == _ASN1Type.IA5String
+
     def test_init_bad_oid(self):
         with pytest.raises(TypeError):
             x509.NameAttribute(None, u'value')
@@ -3665,22 +3823,6 @@ class TestNameAttribute(object):
     def test_init_empty_value(self):
         with pytest.raises(ValueError):
             x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'')
-
-    def test_country_name_type(self):
-        na = x509.NameAttribute(NameOID.COUNTRY_NAME, u"US")
-        assert na._type == _ASN1Type.PrintableString
-        na2 = x509.NameAttribute(
-            NameOID.COUNTRY_NAME, u"US", _ASN1Type.IA5String
-        )
-        assert na2._type == _ASN1Type.IA5String
-
-    def test_types(self):
-        na = x509.NameAttribute(NameOID.COMMON_NAME, u"common")
-        assert na._type == _ASN1Type.UTF8String
-        na2 = x509.NameAttribute(
-            NameOID.COMMON_NAME, u"common", _ASN1Type.IA5String
-        )
-        assert na2._type == _ASN1Type.IA5String
 
     def test_invalid_type(self):
         with pytest.raises(TypeError):
@@ -3950,4 +4092,4 @@ def test_random_serial_number(monkeypatch):
     assert (
         serial_number == utils.int_from_bytes(sample_data, "big") >> 1
     )
-    assert utils.bit_length(serial_number) < 160
+    assert serial_number.bit_length() < 160

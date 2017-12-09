@@ -88,11 +88,25 @@ def _decode_general_names(backend, gns):
 
 def _decode_general_name(backend, gn):
     if gn.type == backend._lib.GEN_DNS:
-        data = _asn1_string_to_bytes(backend, gn.d.dNSName)
-        return x509.DNSName(data)
+        # Convert to bytes and then decode to utf8. We don't use
+        # asn1_string_to_utf8 here because it doesn't properly convert
+        # utf8 from ia5strings.
+        data = _asn1_string_to_bytes(backend, gn.d.dNSName).decode("utf8")
+        # We don't use the constructor for DNSName so we can bypass validation
+        # This allows us to create DNSName objects that have unicode chars
+        # when a certificate (against the RFC) contains them.
+        return x509.DNSName._init_without_validation(data)
     elif gn.type == backend._lib.GEN_URI:
-        data = _asn1_string_to_bytes(backend, gn.d.uniformResourceIdentifier)
-        return x509.UniformResourceIdentifier(data)
+        # Convert to bytes and then decode to utf8. We don't use
+        # asn1_string_to_utf8 here because it doesn't properly convert
+        # utf8 from ia5strings.
+        data = _asn1_string_to_bytes(
+            backend, gn.d.uniformResourceIdentifier
+        ).decode("utf8")
+        # We don't use the constructor for URI so we can bypass validation
+        # This allows us to create URI objects that have unicode chars
+        # when a certificate (against the RFC) contains them.
+        return x509.UniformResourceIdentifier._init_without_validation(data)
     elif gn.type == backend._lib.GEN_RID:
         oid = _obj2txt(backend, gn.d.registeredID)
         return x509.RegisteredID(x509.ObjectIdentifier(oid))
@@ -128,8 +142,14 @@ def _decode_general_name(backend, gn):
             _decode_x509_name(backend, gn.d.directoryName)
         )
     elif gn.type == backend._lib.GEN_EMAIL:
-        data = _asn1_string_to_bytes(backend, gn.d.rfc822Name)
-        return x509.RFC822Name(data)
+        # Convert to bytes and then decode to utf8. We don't use
+        # asn1_string_to_utf8 here because it doesn't properly convert
+        # utf8 from ia5strings.
+        data = _asn1_string_to_bytes(backend, gn.d.rfc822Name).decode("utf8")
+        # We don't use the constructor for RFC822Name so we can bypass
+        # validation. This allows us to create RFC822Name objects that have
+        # unicode chars when a certificate (against the RFC) contains them.
+        return x509.RFC822Name._init_without_validation(data)
     elif gn.type == backend._lib.GEN_OTHERNAME:
         type_id = _obj2txt(backend, gn.d.otherName.type_id)
         value = _asn1_to_der(backend, gn.d.otherName.value)
