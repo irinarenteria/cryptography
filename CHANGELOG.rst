@@ -1,16 +1,47 @@
 Changelog
 =========
 
-.. _v2-2:
+.. _v2-3:
 
-2.2 - `master`_
+2.3 - `master`_
 ~~~~~~~~~~~~~~~
 
 .. note:: This version is not yet released and is under active development.
 
+.. _v2-2-1:
+
+2.2.1 - 2018-03-20
+~~~~~~~~~~~~~~~~~~
+
+* Reverted a change to ``GeneralNames`` which prohibited having zero elements,
+  due to breakages.
+* Fixed a bug in
+  :func:`~cryptography.hazmat.primitives.keywrap.aes_key_unwrap_with_padding`
+  that caused it to raise ``InvalidUnwrap`` when key length modulo 8 was
+  zero.
+
+
+.. _v2-2:
+
+2.2 - 2018-03-19
+~~~~~~~~~~~~~~~~
+
 * **BACKWARDS INCOMPATIBLE:** Support for Python 2.6 has been dropped.
+* Resolved a bug in ``HKDF`` that incorrectly constrained output size.
+* Added :class:`~cryptography.hazmat.primitives.asymmetric.ec.BrainpoolP256R1`,
+  :class:`~cryptography.hazmat.primitives.asymmetric.ec.BrainpoolP384R1`, and
+  :class:`~cryptography.hazmat.primitives.asymmetric.ec.BrainpoolP512R1` to
+  support inter-operating with systems like German smart meters.
 * Added token rotation support to :doc:`Fernet </fernet>` with
   :meth:`~cryptography.fernet.MultiFernet.rotate`.
+* Fixed a memory leak in
+  :func:`~cryptography.hazmat.primitives.asymmetric.ec.derive_private_key`.
+* Added support for AES key wrapping with padding via
+  :func:`~cryptography.hazmat.primitives.keywrap.aes_key_wrap_with_padding`
+  and
+  :func:`~cryptography.hazmat.primitives.keywrap.aes_key_unwrap_with_padding`
+  .
+* Allow loading DSA keys with 224 bit ``q``.
 
 .. _v2-1-4:
 

@@ -52,7 +52,7 @@ if platform.python_implementation() == "PyPy":
             "upgrade PyPy to use this library."
         )
 else:
-    setup_requirements.append("cffi>=1.7")
+    setup_requirements.append("cffi>=1.7,!=1.11.3")
 
 test_requirements = [
     "pytest>=3.2.1,!=3.3.0",
@@ -283,6 +283,8 @@ setup(
     packages=find_packages(where="src", exclude=["_cffi_src", "_cffi_src.*"]),
     include_package_data=True,
 
+    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+
     install_requires=[
         "idna >= 2.1",
         "asn1crypto >= 0.21.0",
@@ -294,12 +296,14 @@ setup(
         ":platform_python_implementation != 'PyPy'": ["cffi >= 1.7"],
 
         "test": test_requirements,
+        "docs": [
+            "sphinx >= 1.6.5",
+            "sphinx_rtd_theme",
+        ],
         "docstest": [
             "doc8",
             "pyenchant >= 1.6.11",
             "readme_renderer >= 16.0",
-            "sphinx >= 1.6.5",
-            "sphinx_rtd_theme",
             "sphinxcontrib-spelling >= 4.0.1",
         ],
         "pep8test": [

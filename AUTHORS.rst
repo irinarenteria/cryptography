@@ -38,3 +38,5 @@ PGP key fingerprints are enclosed in parentheses.
 * Erik Daguerre <fallenwolf@wolfthefallen.com>
 * Aviv Palivoda <palaviv@gmail.com>
 * Chris Wolfe <chriswwolfe@gmail.com>
+* Jeremy Lainé <jeremy.laine@m4x.org>
+* Denis Gladkikh <denis@gladkikh.email>

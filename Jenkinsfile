@@ -60,7 +60,7 @@ def configs = [
     ],
     [
         label: 'docker',
-        imageName: 'pyca/cryptography-runner-jessie-libressl:2.6.3',
+        imageName: 'pyca/cryptography-runner-jessie-libressl:2.6.4',
         toxenvs: ['py27'],
     ],
     [
@@ -146,6 +146,67 @@ def downstreams = [
             pip install -e .
             pip install -r dev-requirements.txt
             inv test
+        """
+    ],
+    [
+        downstreamName: 'aws-encryption-sdk',
+        label: 'docker',
+        imageName: 'pyca/cryptography-runner-ubuntu-rolling',
+        script: """#!/bin/bash -xe
+            git clone --depth=1 https://github.com/awslabs/aws-encryption-sdk-python
+            cd aws-encryption-sdk-python
+            virtualenv .venv
+            source .venv/bin/activate
+            pip install ../cryptography
+            pip install pytest pytest-mock mock
+            pip install -e .
+            AWS_ENCRYPTION_SDK_PYTHON_INTEGRATION_TEST_AWS_KMS_KEY_ID="arn:aws:kms:us-west-2:nonsense" pytest -m local -l
+        """
+    ],
+    [
+        downstreamName: 'certbot',
+        label: 'docker',
+        imageName: 'pyca/cryptography-runner-ubuntu-rolling',
+        script: """#!/bin/bash -xe
+            git clone --depth=1 https://github.com/certbot/certbot
+            cd certbot
+            virtualenv .venv
+            source .venv/bin/activate
+            pip install ../cryptography
+            pip install pytest pytest-mock mock
+            pip install -e acme
+            pip install -e .
+            pytest certbot/tests
+            pytest acme
+        """
+    ],
+    [
+        downstreamName: 'certbot-josepy',
+        label: 'docker',
+        imageName: 'pyca/cryptography-runner-ubuntu-rolling',
+        script: """#!/bin/bash -xe
+            git clone --depth=1 https://github.com/certbot/josepy
+            cd josepy
+            virtualenv .venv
+            source .venv/bin/activate
+            pip install ../cryptography
+            pip install -e .[tests]
+            pytest src
+        """
+    ],
+    [
+        downstreamName: 'urllib3',
+        label: 'docker',
+        imageName: 'pyca/cryptography-runner-ubuntu-rolling',
+        script: """#!/bin/bash -xe
+            git clone --depth 1 https://github.com/shazow/urllib3
+            cd urllib3
+            virtualenv .venv
+            source .venv/bin/activate
+            pip install ../cryptography
+            pip install -r ./dev-requirements.txt
+            pip install -e .[socks]
+            pytest test
         """
     ],
 ]

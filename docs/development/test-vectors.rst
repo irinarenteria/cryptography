@@ -129,6 +129,8 @@ Key exchange
   ``vectors/cryptography_vectors/asymmetric/DH/dhpub_rfc5114_2.der`` contains
   are the above parameters and keys in DER format.
 
+* ``vectors/cryptoraphy_vectors/asymmetric/ECDH/brainpool.txt`` contains
+  Brainpool vectors from :rfc:`7027`.
 
 X.509
 ~~~~~
@@ -402,7 +404,6 @@ Hashes
 * RIPEMD160 from the `RIPEMD website`_.
 * SHA1 from `NIST CAVP`_.
 * SHA2 (224, 256, 384, 512) from `NIST CAVP`_.
-* Whirlpool from the `Whirlpool website`_.
 * Blake2s and Blake2b from OpenSSL `test/evptests.txt`_.
 
 HMAC
@@ -427,6 +428,7 @@ Key wrapping
 ~~~~~~~~~~~~
 
 * AES key wrap (AESKW) and 3DES key wrap test vectors from `NIST CAVP`_.
+* AES key wrap with padding vectors from `Botan's key wrap vectors`_.
 
 Recipes
 ~~~~~~~
@@ -477,8 +479,8 @@ Creating test vectors
 When official vectors are unavailable ``cryptography`` may choose to build
 its own using existing vectors as source material.
 
-Custom Symmetric Vectors
-~~~~~~~~~~~~~~~~~~~~~~~~
+Created Vectors
+~~~~~~~~~~~~~~~
 
 .. toctree::
     :maxdepth: 1
@@ -487,6 +489,8 @@ Custom Symmetric Vectors
     custom-vectors/cast5
     custom-vectors/idea
     custom-vectors/seed
+    custom-vectors/hkdf
+
 
 If official test vectors appear in the future the custom generated vectors
 should be discarded.
@@ -512,7 +516,6 @@ header format (substituting the correct information):
 .. _`BoringSSL ChaCha20Poly1305 tests`: https://boringssl.googlesource.com/boringssl/+/2e2a226ac9201ac411a84b5e79ac3a7333d8e1c9/crypto/cipher_extra/test/chacha20_poly1305_tests.txt
 .. _`BoringSSL evp tests`: https://boringssl.googlesource.com/boringssl/+/ce3773f9fe25c3b54390bc51d72572f251c7d7e6/crypto/evp/evp_tests.txt
 .. _`RIPEMD website`: https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
-.. _`Whirlpool website`: http://www.larc.usp.br/~pbarreto/WhirlpoolPage.html
 .. _`draft RFC`: https://tools.ietf.org/html/draft-josefsson-scrypt-kdf-01
 .. _`Specification repository`: https://github.com/fernet/spec
 .. _`errata`: https://www.rfc-editor.org/errata_search.php?rfc=6238
@@ -539,3 +542,4 @@ header format (substituting the correct information):
 .. _`unknown signature OID`: https://bugzilla.mozilla.org/show_bug.cgi?id=405966
 .. _`botan`: https://github.com/randombit/botan/blob/57789bdfc55061002b2727d0b32587612829a37c/src/tests/data/pubkey/dh.vec
 .. _`DHKE`: https://sandilands.info/sgordon/diffie-hellman-secret-key-exchange-with-openssl
+.. _`Botan's key wrap vectors`: https://github.com/randombit/botan/blob/737f33c09a18500e044dca3e2ae13bd2c08bafdd/src/tests/data/keywrap/nist_key_wrap.vec
