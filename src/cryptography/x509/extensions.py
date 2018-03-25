@@ -1435,7 +1435,7 @@ class IssuingDistributionPoint(object):
 
     def __init__(self, only_contains_user_certs, only_contains_ca_certs,
                  indirect_crl, only_contains_attribute_certs,
-                 distribution_point=None, only_some_reasons=None):
+                 only_some_reasons=None, full_name=None, relative_name=None):
 
         booleans = [only_contains_user_certs,
                     only_contains_ca_certs,
@@ -1455,11 +1455,11 @@ class IssuingDistributionPoint(object):
                 "indirect_crl, only_contains_attribute_certs")
 
         if (len([value for value in booleans if value is True]) == 0 and
-            all(x is not None for x in [distribution_point, only_some_reasons])):
+            all(x is not None for x in [full_name, relative_name, only_some_reasons])):
             raise ValueError("Cannot create empty extension: "
                 "if only_contains_user_certs, only_contains_ca_certs, "
                 "indirectCRL, and only_contains_attribute_certs are all False"
-                ", then either distribution_point or only_some_reasons "
+                ", then either full_name, relative_name or only_some_reasons "
                 "must have a value.")
 
         if (only_some_reasons and not all(isinstance(x, ReasonFlags)
@@ -1471,7 +1471,8 @@ class IssuingDistributionPoint(object):
         self._indirect_crl = indirect_crl
         self._only_contains_attribute_certs = only_contains_attribute_certs
         self._only_some_reasons = _only_some_reasons
-        self._distribution_point = distribution_point
+        self._full_name = full_name
+        self._relative_name = relative_name
 
         def __repr__(self):
             return (
@@ -1480,7 +1481,8 @@ class IssuingDistributionPoint(object):
                 "indirect_crl={0.indirect_crl}, "
                 "only_contains_attribute_certs={0.only_contains_attribute_certs}, "
                 "only_some_reasons={0.only_some_reasons}, "
-                "distribution_point={0.distribution_point}>".format(self)
+                "full_name={0.full_name}, "
+                "relative_name={0.relative_name}>".format(self)
             )
 
         def __eq__(self, other):
@@ -1493,7 +1495,8 @@ class IssuingDistributionPoint(object):
                 self._indirect_crl == indirect_crl and
                 self._only_contains_attribute_certs == only_contains_attribute_certs and
                 self._only_some_reasons == only_some_reasons and
-                self._distribution_point == distribution_point
+                self._full_name == full_name and
+                self._relative_name == relative_name
             )
 
         def __ne__(self, other):
@@ -1506,7 +1509,8 @@ class IssuingDistributionPoint(object):
                 self._only_contains_attribute_certs,
                 self._indirect_crl,
                 self._only_some_reasons,
-                self._distribution_point
+                self._full_name,
+                self._relative_name
             ))
 
         only_contains_user_certs = utils.read_only_property(
@@ -1524,6 +1528,9 @@ class IssuingDistributionPoint(object):
         only_some_reasons = utils.read_only_property(
             "_only_some_reasons"
         )
-        distribution_point = utils.read_only_property(
-            "_distribution_point"
+        full_name = utils.read_only_property(
+            "_full_name"
+        )
+        relative_name = utils.read_only_property(
+            "_relative_name"
         )
