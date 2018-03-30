@@ -450,6 +450,13 @@ def _decode_general_subtrees(backend, stack_subtrees):
     return subtrees
 
 
+def _decode_idp(backend, idp):
+    idp = backend._ffi.cast("ISSUING_DIST_POINT *", pc)
+    idp = backend._ffi.gc(pc, backend._lib.ISSUING_DIST_POINT_free)
+    # okay now we can start parsing out what we need!
+    #return x509.IssuingDistributionPoint(data, goes, here)
+
+
 def _decode_policy_constraints(backend, pc):
     pc = backend._ffi.cast("POLICY_CONSTRAINTS *", pc)
     pc = backend._ffi.gc(pc, backend._lib.POLICY_CONSTRAINTS_free)
@@ -766,6 +773,7 @@ _EXTENSION_HANDLERS_NO_SCT = {
     ExtensionOID.ISSUER_ALTERNATIVE_NAME: _decode_issuer_alt_name,
     ExtensionOID.NAME_CONSTRAINTS: _decode_name_constraints,
     ExtensionOID.POLICY_CONSTRAINTS: _decode_policy_constraints,
+    ExtensionOID.ISSUING_DISTRIBUTION_POINTS: _decode_idp,
 }
 _EXTENSION_HANDLERS = _EXTENSION_HANDLERS_NO_SCT.copy()
 _EXTENSION_HANDLERS[
